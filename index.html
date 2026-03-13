@@ -286,6 +286,67 @@
       margin-bottom: 18px;
     }
 
+    .start-button {
+      width: 100%;
+      font-size: 1.1rem;
+      padding: 16px 22px;
+      margin-top: 6px;
+    }
+
+    .music-picker,
+    .highscore-board {
+      margin-top: 18px;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(30, 44, 42, 0.08);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .music-picker h3,
+    .highscore-board h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+
+    .music-options {
+      display: grid;
+      gap: 8px;
+    }
+
+    .music-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+    }
+
+    .music-option input {
+      accent-color: var(--accent);
+    }
+
+    .highscore-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .highscore-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed rgba(30, 44, 42, 0.14);
+      font-size: 0.95rem;
+    }
+
+    .highscore-list li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
     button {
       border: 0;
       border-radius: 999px;
@@ -363,7 +424,7 @@
       </div>
       <div class="card">
         <span class="label">Levens</span>
-        <span class="value" id="lives">3</span>
+        <span class="value" id="lives">5</span>
       </div>
       <div class="card">
         <span class="label">Level</span>
@@ -395,7 +456,24 @@
               Pak chips, weekend, Cambuur-wedstrijden, 180, water en broodjes.
               Ontwijk Linda, de kale man en aanvliegende bbq's.
             </p>
-            <button id="start-button">Start game</button>
+            <button class="start-button" id="start-button">Start game</button>
+            <div class="music-picker">
+              <h3>Muziek</h3>
+              <div class="music-options">
+                <label class="music-option">
+                  <input type="radio" name="music-track" value="Cubicle_Chaos.mp3" checked />
+                  <span>Cubicle Chaos</span>
+                </label>
+                <label class="music-option">
+                  <input type="radio" name="music-track" value="Friday_Frenzy_Halftime_Hustle.mp3" />
+                  <span>Friday Frenzy Halftime Hustle</span>
+                </label>
+              </div>
+            </div>
+            <div class="highscore-board">
+              <h3>Highscores</h3>
+              <ol class="highscore-list" id="highscore-list"></ol>
+            </div>
             <div class="controls">
               <span>Goed: chips, weekend, cambuur, 180, water, broodjes</span>
               <span>Fout: Linda, kale man, bbq</span>
@@ -411,6 +489,8 @@
     </div>
   </main>
 
+  <audio id="bg-music" loop preload="auto"></audio>
+
   <script>
     const arena = document.getElementById("arena");
     const ferry = document.getElementById("ferry");
@@ -423,8 +503,11 @@
     const livesEl = document.getElementById("lives");
     const levelEl = document.getElementById("level");
     const highscoreEl = document.getElementById("highscore");
+    const highscoreListEl = document.getElementById("highscore-list");
     const leftButton = document.getElementById("left-button");
     const rightButton = document.getElementById("right-button");
+    const bgMusic = document.getElementById("bg-music");
+    const musicInputs = Array.from(document.querySelectorAll('input[name="music-track"]'));
 
     const goodItems = [
       { emoji: "🍟", points: 20, label: "chips", message: "Chippietijd. Vrijdag 14:30." },
@@ -469,12 +552,16 @@
       spawnTimer: 0,
       frameId: null,
       lastTime: 0,
-      highscore: Number(localStorage.getItem("ferry-fa-highscore") || 0)
+      highscore: Number(localStorage.getItem("ferry-fa-highscore") || 0),
+      highscores: JSON.parse(localStorage.getItem("ferry-fa-highscores") || "[]"),
+      selectedTrack: "Cubicle_Chaos.mp3"
     };
 
     let announcerTimer = null;
 
     highscoreEl.textContent = state.highscore;
+    bgMusic.setAttribute("src", state.selectedTrack);
+    renderHighscores();
 
     function arenaMetrics() {
       return {
@@ -507,6 +594,45 @@
         localStorage.setItem("ferry-fa-highscore", String(state.highscore));
       }
       highscoreEl.textContent = state.highscore;
+    }
+
+    function renderHighscores() {
+      highscoreListEl.innerHTML = "";
+      if (!state.highscores.length) {
+        const emptyItem = document.createElement("li");
+        emptyItem.innerHTML = "<span>Nog geen scores</span><strong>0</strong>";
+        highscoreListEl.appendChild(emptyItem);
+        return;
+      }
+
+      for (const entry of state.highscores) {
+        const item = document.createElement("li");
+        item.innerHTML =
+          "<span>" + entry.label + "</span><strong>" + entry.score + "</strong>";
+        highscoreListEl.appendChild(item);
+      }
+    }
+
+    function storeHighscore(score) {
+      const label = "Vrijdagrun " + new Date().toLocaleDateString("nl-NL");
+      state.highscores.push({ label, score });
+      state.highscores.sort((a, b) => b.score - a.score);
+      state.highscores = state.highscores.slice(0, 5);
+      localStorage.setItem("ferry-fa-highscores", JSON.stringify(state.highscores));
+      renderHighscores();
+    }
+
+    function playSelectedTrack() {
+      if (bgMusic.getAttribute("src") !== state.selectedTrack) {
+        bgMusic.setAttribute("src", state.selectedTrack);
+        bgMusic.load();
+      }
+      bgMusic.volume = 0.28;
+      bgMusic.play().catch(() => {});
+    }
+
+    function stopMusic() {
+      bgMusic.pause();
     }
 
     function placeFerry() {
@@ -576,6 +702,7 @@
       resetGame();
       state.running = true;
       overlay.classList.add("hidden");
+      playSelectedTrack();
       cancelAnimationFrame(state.frameId);
       state.frameId = requestAnimationFrame(loop);
     }
@@ -583,6 +710,8 @@
     function endGame() {
       state.running = false;
       cancelAnimationFrame(state.frameId);
+      stopMusic();
+      storeHighscore(state.score);
       setOverlay(
         "Werkdag voorbij",
         "Ferry sloot af met " + state.score + " punten. Start opnieuw en zet een nog strakkere maandafsluiting neer.",
@@ -733,6 +862,17 @@
 
     bindHoldButton(leftButton, "left");
     bindHoldButton(rightButton, "right");
+
+    for (const input of musicInputs) {
+      input.addEventListener("change", () => {
+        if (input.checked) {
+          state.selectedTrack = input.value;
+          if (!state.running) {
+            bgMusic.setAttribute("src", state.selectedTrack);
+          }
+        }
+      });
+    }
 
     startButton.addEventListener("click", startGame);
     window.addEventListener("resize", placeFerry);
