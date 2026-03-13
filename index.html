@@ -134,6 +134,29 @@
       z-index: 2;
     }
 
+    .announcer {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      max-width: min(44%, 260px);
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(30, 44, 42, 0.08);
+      font-size: 0.92rem;
+      line-height: 1.35;
+      z-index: 2;
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+    }
+
+    .announcer.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     .ferry {
       position: absolute;
       bottom: 28px;
@@ -196,15 +219,30 @@
 
     .item {
       position: absolute;
-      width: 74px;
-      height: 74px;
+      width: 84px;
+      min-height: 84px;
       border-radius: 18px;
-      display: grid;
-      place-items: center;
-      font-size: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 6px;
       user-select: none;
       border: 2px solid rgba(30, 44, 42, 0.08);
       box-shadow: 0 10px 16px rgba(31, 44, 42, 0.12);
+      text-align: center;
+    }
+
+    .item-icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .item-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      line-height: 1.1;
     }
 
     .item.good {
@@ -312,9 +350,9 @@
     <section class="hero">
       <h1>Ferry de FA-medewerker</h1>
       <p class="subtitle">
-        Ferry is een scherpe FA-medewerker van zo'n 26 à 27 jaar. Help hem facturen,
-        bonnetjes en betalingen opvangen voordat de maandafsluiting ontspoort.
-        Vermijd fraude, dubbele boekingen en paniekmails van de directie.
+        Ferry is een scherpe FA-medewerker van zo'n 26 a 27 jaar. Help hem door een
+        chaotische vrijdagmiddag vol chips, broodjes, Cambuur, darten, Linda,
+        bbq's en onverwachte types op kantoor.
       </p>
     </section>
 
@@ -340,6 +378,7 @@
     <section class="arena-wrap">
       <div class="arena" id="arena">
         <div class="lane-title">Vang administratie. Ontwijk fouten.</div>
+        <div class="announcer" id="announcer"></div>
         <div class="ferry" id="ferry" aria-hidden="true">
           <div class="hair"></div>
           <div class="head"></div>
@@ -353,12 +392,13 @@
             <h2 id="overlay-title">Start de werkdag</h2>
             <p id="overlay-text">
               Gebruik de pijltjestoetsen of A/D om Ferry door het kantoor te bewegen.
-              Vang goede administratie voor punten en ontwijk rode probleemitems.
+              Pak chips, weekend, Cambuur-wedstrijden, 180, water en broodjes.
+              Ontwijk Linda, de kale man en aanvliegende bbq's.
             </p>
             <button id="start-button">Start game</button>
             <div class="controls">
-              <span>Goed: 📄 💶 🧾</span>
-              <span>Fout: ⚠️ ❌ 🚨</span>
+              <span>Goed: chips, weekend, cambuur, 180, water, broodjes</span>
+              <span>Fout: Linda, kale man, bbq</span>
             </div>
           </div>
         </div>
@@ -377,6 +417,7 @@
     const overlay = document.getElementById("overlay");
     const overlayTitle = document.getElementById("overlay-title");
     const overlayText = document.getElementById("overlay-text");
+    const announcer = document.getElementById("announcer");
     const startButton = document.getElementById("start-button");
     const scoreEl = document.getElementById("score");
     const livesEl = document.getElementById("lives");
@@ -386,15 +427,33 @@
     const rightButton = document.getElementById("right-button");
 
     const goodItems = [
-      { emoji: "📄", points: 10, label: "factuur" },
-      { emoji: "💶", points: 15, label: "betaling" },
-      { emoji: "🧾", points: 12, label: "bonnetje" }
+      { emoji: "🍟", points: 20, label: "chips", message: "Chippietijd. Vrijdag 14:30." },
+      { emoji: "🎉", points: 18, label: "weekend", message: "Bijna weekend." },
+      { emoji: "⚽", points: 16, label: "Cambuur", message: "Cambuur-wedstrijd binnen." },
+      { emoji: "🎯", points: 25, label: "180", message: "Honderdtachtig." },
+      { emoji: "💧", points: 12, label: "water", message: "Even water pakken." },
+      { emoji: "🥖", points: 14, label: "broodjes", message: "Broodjes zijn binnen." }
     ];
 
     const badItems = [
-      { emoji: "⚠️", damage: 1, label: "afkeur" },
-      { emoji: "❌", damage: 1, label: "dubbele boeking" },
-      { emoji: "🚨", damage: 1, label: "fraudesignaal" }
+      {
+        emoji: "👵🪖",
+        damage: 1,
+        label: "Linda",
+        message: "Haaaaaallooooooo"
+      },
+      {
+        emoji: "😀🧣",
+        damage: 1,
+        label: "Kale man",
+        message: "Heeeeeeeeeey ferry, hey hey cambuur!"
+      },
+      {
+        emoji: "🍖🔥",
+        damage: 1,
+        label: "bbq",
+        message: "Pas op, bbq in aantocht."
+      }
     ];
 
     const state = {
@@ -412,6 +471,8 @@
       lastTime: 0,
       highscore: Number(localStorage.getItem("ferry-fa-highscore") || 0)
     };
+
+    let announcerTimer = null;
 
     highscoreEl.textContent = state.highscore;
 
@@ -471,14 +532,19 @@
       const data = randomItem();
       const el = document.createElement("div");
       el.className = "item " + data.type;
-      el.textContent = data.emoji;
-      const x = Math.random() * (width - 74);
+      el.innerHTML =
+        '<div class="item-icon">' + data.emoji + "</div>" +
+        '<div class="item-label">' + data.label + "</div>";
+      const x = Math.random() * (width - 84);
       arena.appendChild(el);
+      if (data.message && (data.type === "bad" || Math.random() < 0.3)) {
+        announce(data.message);
+      }
       state.items.push({
         ...data,
         el,
         x,
-        y: -78,
+        y: -92,
         speed: 2.2 + Math.random() * 1.6 + state.level * 0.7
       });
       syncItem(state.items[state.items.length - 1]);
@@ -493,6 +559,15 @@
       overlayText.textContent = text;
       startButton.textContent = buttonLabel;
       overlay.classList.remove("hidden");
+    }
+
+    function announce(message) {
+      announcer.textContent = message;
+      announcer.classList.add("visible");
+      clearTimeout(announcerTimer);
+      announcerTimer = setTimeout(() => {
+        announcer.classList.remove("visible");
+      }, 1700);
     }
 
     function startGame() {
@@ -559,17 +634,23 @@
 
         const overlaps =
           item.x < ferryBox.x + ferryBox.width &&
-          item.x + 74 > ferryBox.x &&
+          item.x + 84 > ferryBox.x &&
           item.y < ferryBox.y + ferryBox.height &&
-          item.y + 74 > ferryBox.y;
+          item.y + 84 > ferryBox.y;
 
         if (overlaps) {
           if (item.type === "good") {
             state.score += item.points;
             hitEffect(scoreEl);
+            if (item.message) {
+              announce(item.message);
+            }
           } else {
             state.lives -= item.damage;
             hitEffect(livesEl);
+            if (item.message) {
+              announce(item.message);
+            }
           }
           item.el.remove();
           state.items.splice(i, 1);
