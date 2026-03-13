@@ -459,10 +459,10 @@
     const state = {
       running: false,
       score: 0,
-      lives: 3,
+      lives: 5,
       level: 1,
       ferryX: 0,
-      ferrySpeed: 8,
+      ferrySpeed: 10.5,
       moveLeft: false,
       moveRight: false,
       items: [],
@@ -488,7 +488,7 @@
     function resetGame() {
       clearItems();
       state.score = 0;
-      state.lives = 3;
+      state.lives = 5;
       state.level = 1;
       state.spawnTimer = 0;
       state.lastTime = 0;
@@ -545,7 +545,9 @@
         el,
         x,
         y: -92,
-        speed: 2.2 + Math.random() * 1.6 + state.level * 0.7
+        speed: data.type === "bad"
+          ? 0.95 + Math.random() * 0.55 + state.level * 0.22
+          : 1.2 + Math.random() * 0.8 + state.level * 0.3
       });
       syncItem(state.items[state.items.length - 1]);
     }
@@ -614,7 +616,7 @@
       placeFerry();
 
       state.spawnTimer += delta;
-      const spawnThreshold = Math.max(38 - state.level * 3, 16);
+      const spawnThreshold = Math.max(52 - state.level * 2, 28);
       if (state.spawnTimer >= spawnThreshold) {
         spawnItem();
         state.spawnTimer = 0;
