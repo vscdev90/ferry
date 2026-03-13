@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ferry de FA-medewerker</title>
+  <style>
+    :root {
+      --bg-a: #f7efe3;
+      --bg-b: #dfe9d8;
+      --panel: rgba(255, 250, 242, 0.86);
+      --ink: #1e2c2a;
+      --accent: #1f7a5c;
+      --accent-2: #ffb703;
+      --danger: #d64545;
+      --shadow: 0 18px 40px rgba(31, 44, 42, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.8), transparent 34%),
+        linear-gradient(140deg, var(--bg-a), var(--bg-b));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .game-shell {
+      width: min(960px, 100%);
+      background: var(--panel);
+      border: 2px solid rgba(30, 44, 42, 0.08);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      padding: 28px 28px 16px;
+      background:
+        linear-gradient(120deg, rgba(31, 122, 92, 0.16), rgba(255, 183, 3, 0.16));
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 62ch;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 0 28px 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid rgba(30, 44, 42, 0.08);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .arena-wrap {
+      padding: 0 28px 28px;
+    }
+
+    .arena {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      min-height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      background:
+        linear-gradient(to bottom, #f5fbff 0%, #eef7fb 48%, #d6eadf 48%, #d6eadf 100%);
+      border: 2px solid rgba(30, 44, 42, 0.08);
+    }
+
+    .arena::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255,255,255,0.18), rgba(255,255,255,0)),
+        repeating-linear-gradient(
+          to right,
+          transparent 0 78px,
+          rgba(31, 122, 92, 0.05) 78px 80px
+        );
+      pointer-events: none;
+    }
+
+    .lane-title {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.84);
+      font-size: 0.92rem;
+      border: 1px solid rgba(30, 44, 42, 0.08);
+      z-index: 2;
+    }
+
+    .ferry {
+      position: absolute;
+      bottom: 28px;
+      width: 92px;
+      height: 112px;
+      z-index: 2;
+      transition: transform 0.08s linear;
+    }
+
+    .ferry .head {
+      position: absolute;
+      top: 0;
+      left: 26px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #f0c7a0;
+      border: 2px solid rgba(30, 44, 42, 0.08);
+    }
+
+    .ferry .hair {
+      position: absolute;
+      top: -2px;
+      left: 21px;
+      width: 50px;
+      height: 22px;
+      background: #533a2d;
+      border-radius: 20px 20px 8px 8px;
+    }
+
+    .ferry .body {
+      position: absolute;
+      top: 34px;
+      left: 13px;
+      width: 66px;
+      height: 54px;
+      background: linear-gradient(180deg, #1f7a5c, #185f48);
+      border-radius: 16px 16px 12px 12px;
+    }
+
+    .ferry .badge {
+      position: absolute;
+      top: 49px;
+      left: 40px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .ferry .legs {
+      position: absolute;
+      bottom: 0;
+      left: 20px;
+      width: 52px;
+      height: 34px;
+      background:
+        linear-gradient(to right, #334 0 20px, transparent 20px 32px, #334 32px 52px);
+      border-radius: 0 0 10px 10px;
+    }
+
+    .item {
+      position: absolute;
+      width: 74px;
+      height: 74px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      user-select: none;
+      border: 2px solid rgba(30, 44, 42, 0.08);
+      box-shadow: 0 10px 16px rgba(31, 44, 42, 0.12);
+    }
+
+    .item.good {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .item.bad {
+      background: rgba(214, 69, 69, 0.16);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(19, 35, 32, 0.18);
+      z-index: 3;
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .modal {
+      width: min(520px, 100%);
+      background: rgba(255, 250, 242, 0.96);
+      border-radius: 24px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      font-size: 2rem;
+    }
+
+    .modal p {
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 22px;
+      font: inherit;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), #2e9e78);
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(31, 122, 92, 0.28);
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
+      font-size: 0.95rem;
+    }
+
+    .touch-controls {
+      display: none;
+      gap: 12px;
+      justify-content: center;
+      padding: 0 28px 28px;
+    }
+
+    .touch-controls button {
+      min-width: 132px;
+      background: linear-gradient(90deg, #264653, #3a6e7f);
+    }
+
+    .flash {
+      animation: pulse 0.35s ease;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    @media (max-width: 760px) {
+      .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .arena {
+        min-height: 360px;
+      }
+
+      .touch-controls {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell">
+    <section class="hero">
+      <h1>Ferry de FA-medewerker</h1>
+      <p class="subtitle">
+        Ferry is een scherpe FA-medewerker van zo'n 26 à 27 jaar. Help hem facturen,
+        bonnetjes en betalingen opvangen voordat de maandafsluiting ontspoort.
+        Vermijd fraude, dubbele boekingen en paniekmails van de directie.
+      </p>
+    </section>
+
+    <section class="dashboard">
+      <div class="card">
+        <span class="label">Score</span>
+        <span class="value" id="score">0</span>
+      </div>
+      <div class="card">
+        <span class="label">Levens</span>
+        <span class="value" id="lives">3</span>
+      </div>
+      <div class="card">
+        <span class="label">Level</span>
+        <span class="value" id="level">1</span>
+      </div>
+      <div class="card">
+        <span class="label">Topscore</span>
+        <span class="value" id="highscore">0</span>
+      </div>
+    </section>
+
+    <section class="arena-wrap">
+      <div class="arena" id="arena">
+        <div class="lane-title">Vang administratie. Ontwijk fouten.</div>
+        <div class="ferry" id="ferry" aria-hidden="true">
+          <div class="hair"></div>
+          <div class="head"></div>
+          <div class="body"></div>
+          <div class="badge">FA</div>
+          <div class="legs"></div>
+        </div>
+
+        <div class="overlay" id="overlay">
+          <div class="modal">
+            <h2 id="overlay-title">Start de werkdag</h2>
+            <p id="overlay-text">
+              Gebruik de pijltjestoetsen of A/D om Ferry door het kantoor te bewegen.
+              Vang goede administratie voor punten en ontwijk rode probleemitems.
+            </p>
+            <button id="start-button">Start game</button>
+            <div class="controls">
+              <span>Goed: 📄 💶 🧾</span>
+              <span>Fout: ⚠️ ❌ 🚨</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="touch-controls">
+      <button type="button" id="left-button">Links</button>
+      <button type="button" id="right-button">Rechts</button>
+    </div>
+  </main>
+
+  <script>
+    const arena = document.getElementById("arena");
+    const ferry = document.getElementById("ferry");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlay-title");
+    const overlayText = document.getElementById("overlay-text");
+    const startButton = document.getElementById("start-button");
+    const scoreEl = document.getElementById("score");
+    const livesEl = document.getElementById("lives");
+    const levelEl = document.getElementById("level");
+    const highscoreEl = document.getElementById("highscore");
+    const leftButton = document.getElementById("left-button");
+    const rightButton = document.getElementById("right-button");
+
+    const goodItems = [
+      { emoji: "📄", points: 10, label: "factuur" },
+      { emoji: "💶", points: 15, label: "betaling" },
+      { emoji: "🧾", points: 12, label: "bonnetje" }
+    ];
+
+    const badItems = [
+      { emoji: "⚠️", damage: 1, label: "afkeur" },
+      { emoji: "❌", damage: 1, label: "dubbele boeking" },
+      { emoji: "🚨", damage: 1, label: "fraudesignaal" }
+    ];
+
+    const state = {
+      running: false,
+      score: 0,
+      lives: 3,
+      level: 1,
+      ferryX: 0,
+      ferrySpeed: 8,
+      moveLeft: false,
+      moveRight: false,
+      items: [],
+      spawnTimer: 0,
+      frameId: null,
+      lastTime: 0,
+      highscore: Number(localStorage.getItem("ferry-fa-highscore") || 0)
+    };
+
+    highscoreEl.textContent = state.highscore;
+
+    function arenaMetrics() {
+      return {
+        width: arena.clientWidth,
+        height: arena.clientHeight,
+        ferryWidth: ferry.offsetWidth,
+        ferryHeight: ferry.offsetHeight
+      };
+    }
+
+    function resetGame() {
+      clearItems();
+      state.score = 0;
+      state.lives = 3;
+      state.level = 1;
+      state.spawnTimer = 0;
+      state.lastTime = 0;
+      const { width, ferryWidth } = arenaMetrics();
+      state.ferryX = (width - ferryWidth) / 2;
+      updateHud();
+      placeFerry();
+    }
+
+    function updateHud() {
+      scoreEl.textContent = state.score;
+      livesEl.textContent = state.lives;
+      levelEl.textContent = state.level;
+      if (state.score > state.highscore) {
+        state.highscore = state.score;
+        localStorage.setItem("ferry-fa-highscore", String(state.highscore));
+      }
+      highscoreEl.textContent = state.highscore;
+    }
+
+    function placeFerry() {
+      ferry.style.left = state.ferryX + "px";
+    }
+
+    function clearItems() {
+      for (const item of state.items) {
+        item.el.remove();
+      }
+      state.items = [];
+    }
+
+    function randomItem() {
+      const isBad = Math.random() < Math.min(0.18 + (state.level - 1) * 0.05, 0.38);
+      const pool = isBad ? badItems : goodItems;
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      return { ...chosen, type: isBad ? "bad" : "good" };
+    }
+
+    function spawnItem() {
+      const { width } = arenaMetrics();
+      const data = randomItem();
+      const el = document.createElement("div");
+      el.className = "item " + data.type;
+      el.textContent = data.emoji;
+      const x = Math.random() * (width - 74);
+      arena.appendChild(el);
+      state.items.push({
+        ...data,
+        el,
+        x,
+        y: -78,
+        speed: 2.2 + Math.random() * 1.6 + state.level * 0.7
+      });
+      syncItem(state.items[state.items.length - 1]);
+    }
+
+    function syncItem(item) {
+      item.el.style.transform = "translate(" + item.x + "px," + item.y + "px)";
+    }
+
+    function setOverlay(title, text, buttonLabel) {
+      overlayTitle.textContent = title;
+      overlayText.textContent = text;
+      startButton.textContent = buttonLabel;
+      overlay.classList.remove("hidden");
+    }
+
+    function startGame() {
+      resetGame();
+      state.running = true;
+      overlay.classList.add("hidden");
+      cancelAnimationFrame(state.frameId);
+      state.frameId = requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      state.running = false;
+      cancelAnimationFrame(state.frameId);
+      setOverlay(
+        "Werkdag voorbij",
+        "Ferry sloot af met " + state.score + " punten. Start opnieuw en zet een nog strakkere maandafsluiting neer.",
+        "Opnieuw spelen"
+      );
+    }
+
+    function hitEffect(element) {
+      element.classList.add("flash");
+      setTimeout(() => element.classList.remove("flash"), 250);
+    }
+
+    function loop(timestamp) {
+      if (!state.running) {
+        return;
+      }
+
+      const delta = state.lastTime ? (timestamp - state.lastTime) / 16.67 : 1;
+      state.lastTime = timestamp;
+
+      const { width, height, ferryWidth, ferryHeight } = arenaMetrics();
+
+      if (state.moveLeft) {
+        state.ferryX -= state.ferrySpeed * delta;
+      }
+      if (state.moveRight) {
+        state.ferryX += state.ferrySpeed * delta;
+      }
+
+      state.ferryX = Math.max(0, Math.min(width - ferryWidth, state.ferryX));
+      placeFerry();
+
+      state.spawnTimer += delta;
+      const spawnThreshold = Math.max(38 - state.level * 3, 16);
+      if (state.spawnTimer >= spawnThreshold) {
+        spawnItem();
+        state.spawnTimer = 0;
+      }
+
+      const ferryBox = {
+        x: state.ferryX,
+        y: height - ferryHeight - 28,
+        width: ferryWidth,
+        height: ferryHeight
+      };
+
+      for (let i = state.items.length - 1; i >= 0; i -= 1) {
+        const item = state.items[i];
+        item.y += item.speed * delta;
+        syncItem(item);
+
+        const overlaps =
+          item.x < ferryBox.x + ferryBox.width &&
+          item.x + 74 > ferryBox.x &&
+          item.y < ferryBox.y + ferryBox.height &&
+          item.y + 74 > ferryBox.y;
+
+        if (overlaps) {
+          if (item.type === "good") {
+            state.score += item.points;
+            hitEffect(scoreEl);
+          } else {
+            state.lives -= item.damage;
+            hitEffect(livesEl);
+          }
+          item.el.remove();
+          state.items.splice(i, 1);
+          updateHud();
+          continue;
+        }
+
+        if (item.y > height) {
+          if (item.type === "good") {
+            state.lives -= 1;
+            hitEffect(livesEl);
+            updateHud();
+          }
+          item.el.remove();
+          state.items.splice(i, 1);
+        }
+      }
+
+      const newLevel = Math.floor(state.score / 120) + 1;
+      if (newLevel !== state.level) {
+        state.level = newLevel;
+        hitEffect(levelEl);
+        updateHud();
+      }
+
+      if (state.lives <= 0) {
+        endGame();
+        return;
+      }
+
+      state.frameId = requestAnimationFrame(loop);
+    }
+
+    function setMovement(direction, active) {
+      if (direction === "left") {
+        state.moveLeft = active;
+      }
+      if (direction === "right") {
+        state.moveRight = active;
+      }
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+        setMovement("left", true);
+      }
+      if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+        setMovement("right", true);
+      }
+      if ((event.key === " " || event.key === "Enter") && !state.running) {
+        startGame();
+      }
+    });
+
+    document.addEventListener("keyup", (event) => {
+      if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+        setMovement("left", false);
+      }
+      if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+        setMovement("right", false);
+      }
+    });
+
+    function bindHoldButton(button, direction) {
+      const down = (event) => {
+        event.preventDefault();
+        setMovement(direction, true);
+      };
+      const up = (event) => {
+        event.preventDefault();
+        setMovement(direction, false);
+      };
+      button.addEventListener("pointerdown", down);
+      button.addEventListener("pointerup", up);
+      button.addEventListener("pointerleave", up);
+      button.addEventListener("pointercancel", up);
+    }
+
+    bindHoldButton(leftButton, "left");
+    bindHoldButton(rightButton, "right");
+
+    startButton.addEventListener("click", startGame);
+    window.addEventListener("resize", placeFerry);
+
+    resetGame();
+  </script>
+</body>
+</html>
